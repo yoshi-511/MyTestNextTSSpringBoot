@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Item Management - CRUD</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            margin-left: 10px;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-edit {
+            background: #28a745;
+            color: white;
+            padding: 8px 16px;
+            font-size: 14px;
+            margin-right: 8px;
+        }
+
+        .btn-edit:hover {
+            background: #218838;
+        }
+
+        .item-list {
+            list-style: none;
+        }
+
+        .item-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .item-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .item-card.completed {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+        }
+
+        .item-info {
+            flex: 1;
+        }
+
+        .item-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .item-description {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .item-status {
+            font-size: 12px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-top: 8px;
+            display: inline-block;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .search-box input {
+            flex: 1;
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            display: block;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Item Management</h1>
+
+        <div id="message" class="message"></div>
+
+        <div class="card">
+            <h2 style="margin-bottom: 20px; color: #333;">
+                <span id="formTitle">New Item</span>
+            </h2>
+            <form id="itemForm">
+                <input type="hidden" id="itemId">
+                <div class="form-group">
+                    <label for="name">Name *</label>
+                    <input type="text" id="name" required maxlength="100" placeholder="Enter item name">
+                </div>
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea id="description" maxlength="500" placeholder="Enter item description"></textarea>
+                </div>
+                <div class="form-group checkbox-wrapper">
+                    <input type="checkbox" id="completed">
+                    <label for="completed" style="margin-bottom: 0;">Completed</label>
+                </div>
+                <div style="margin-top: 20px;">
+                    <button type="submit" class="btn btn-primary" id="submitBtn">Add Item</button>
+                    <button type="button" class="btn btn-secondary" id="cancelBtn" style="display: none;">Cancel</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2 style="margin-bottom: 20px; color: #333;">Item List</h2>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Search by name...">
+                <button class="btn btn-primary" onclick="searchItems()">Search</button>
+                <button class="btn btn-secondary" onclick="loadItems()">Reset</button>
+            </div>
+            <ul class="item-list" id="itemList">
+                <li class="empty-state">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                    </svg>
+                    <p>No items yet. Add your first item above!</p>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = '/api/items';
+        let editingId = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadItems();
+            document.getElementById('itemForm').addEventListener('submit', handleSubmit);
+            document.getElementById('cancelBtn').addEventListener('click', resetForm);
+        });
+
+        async function loadItems() {
+            try {
+                const response = await fetch(API_URL);
+                const items = await response.json();
+                renderItems(items);
+                document.getElementById('searchInput').value = '';
+            } catch (error) {
+                showMessage('Failed to load items', 'error');
+            }
+        }
+
+        async function searchItems() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) {
+                loadItems();
+                return;
+            }
+            try {
+                const response = await fetch(`${API_URL}/search?name=${encodeURIComponent(query)}`);
+                const items = await response.json();
+                renderItems(items);
+            } catch (error) {
+                showMessage('Search failed', 'error');
+            }
+        }
+
+        function renderItems(items) {
+            const list = document.getElementById('itemList');
+
+            if (items.length === 0) {
+                list.innerHTML = `
+                    <li class="empty-state">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                        </svg>
+                        <p>No items found.</p>
+                    </li>
+                `;
+                return;
+            }
+
+            list.innerHTML = items.map(item => `
+                <li class="item-card ${item.completed ? 'completed' : ''}">
+                    <div class="item-info">
+                        <div class="item-name">${escapeHtml(item.name)}</div>
+                        <div class="item-description">${escapeHtml(item.description || 'No description')}</div>
+                        <span class="item-status ${item.completed ? 'status-completed' : 'status-pending'}">
+                            ${item.completed ? 'Completed' : 'Pending'}
+                        </span>
+                    </div>
+                    <div class="item-actions">
+                        <button class="btn btn-edit" onclick="editItem(${item.id})">Edit</button>
+                        <button class="btn btn-danger" onclick="deleteItem(${item.id})">Delete</button>
+                    </div>
+                </li>
+            `).join('');
+        }
+
+        async function handleSubmit(e) {
+            e.preventDefault();
+
+            const item = {
+                name: document.getElementById('name').value.trim(),
+                description: document.getElementById('description').value.trim(),
+                completed: document.getElementById('completed').checked
+            };
+
+            try {
+                let response;
+                if (editingId) {
+                    response = await fetch(`${API_URL}/${editingId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(item)
+                    });
+                } else {
+                    response = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(item)
+                    });
+                }
+
+                if (response.ok) {
+                    showMessage(editingId ? 'Item updated successfully!' : 'Item added successfully!', 'success');
+                    resetForm();
+                    loadItems();
+                } else {
+                    const error = await response.json();
+                    showMessage(error.message || 'Operation failed', 'error');
+                }
+            } catch (error) {
+                showMessage('Operation failed', 'error');
+            }
+        }
+
+        async function editItem(id) {
+            try {
+                const response = await fetch(`${API_URL}/${id}`);
+                const item = await response.json();
+
+                document.getElementById('itemId').value = item.id;
+                document.getElementById('name').value = item.name;
+                document.getElementById('description').value = item.description || '';
+                document.getElementById('completed').checked = item.completed;
+
+                editingId = id;
+                document.getElementById('formTitle').textContent = 'Edit Item';
+                document.getElementById('submitBtn').textContent = 'Update Item';
+                document.getElementById('cancelBtn').style.display = 'inline-block';
+
+                document.getElementById('name').focus();
+            } catch (error) {
+                showMessage('Failed to load item', 'error');
+            }
+        }
+
+        async function deleteItem(id) {
+            if (!confirm('Are you sure you want to delete this item?')) return;
+
+            try {
+                const response = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    showMessage('Item deleted successfully!', 'success');
+                    loadItems();
+                    if (editingId === id) resetForm();
+                } else {
+                    showMessage('Failed to delete item', 'error');
+                }
+            } catch (error) {
+                showMessage('Failed to delete item', 'error');
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('itemForm').reset();
+            document.getElementById('itemId').value = '';
+            editingId = null;
+            document.getElementById('formTitle').textContent = 'New Item';
+            document.getElementById('submitBtn').textContent = 'Add Item';
+            document.getElementById('cancelBtn').style.display = 'none';
+        }
+
+        function showMessage(text, type) {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.className = `message ${type}`;
+            setTimeout(() => {
+                msg.className = 'message';
+            }, 3000);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

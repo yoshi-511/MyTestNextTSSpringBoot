@@ -1,0 +1,12 @@
+.vscode/launch.json
+
+# H2 Database files
+*.mv.db
+*.trace.db
+
+# Build outputs
+backend/target/
+
+# IDE
+.idea/
+*.iml

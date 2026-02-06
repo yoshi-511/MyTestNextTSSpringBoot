@@ -342,6 +342,7 @@
                 </select>
                 <button class="btn btn-primary" onclick="filterItems()">Search</button>
                 <button class="btn btn-secondary" onclick="resetFilter()">Reset</button>
+                <button class="btn btn-primary" id="csvExportBtn" onclick="exportCsv()" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">CSV Export</button>
             </div>
             <ul class="item-list" id="itemList">
                 <li class="empty-state">
@@ -591,6 +592,87 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        async function exportCsv() {
+            const btn = document.getElementById('csvExportBtn');
+            btn.disabled = true;
+            btn.textContent = 'Exporting...';
+
+            try {
+                const response = await fetch(`${API_URL}/csv/export`, {
+                    method: 'POST',
+                    headers: getHeaders()
+                });
+                if (response.status === 401 || response.status === 403) {
+                    logout();
+                    return;
+                }
+                const data = await response.json();
+                const filename = data.filename;
+                showMessage('CSV generating...', 'success');
+                pollCsvStatus(filename);
+            } catch (error) {
+                showMessage('CSV export failed', 'error');
+                btn.disabled = false;
+                btn.textContent = 'CSV Export';
+            }
+        }
+
+        function pollCsvStatus(filename) {
+            const interval = setInterval(async () => {
+                try {
+                    const response = await fetch(`${API_URL}/csv/status/${filename}`, {
+                        headers: getHeaders()
+                    });
+                    const data = await response.json();
+
+                    if (data.status === 'COMPLETED') {
+                        clearInterval(interval);
+                        showMessage('CSV ready! Downloading...', 'success');
+                        downloadCsv(filename);
+                    } else if (data.status === 'FAILED') {
+                        clearInterval(interval);
+                        showMessage('CSV generation failed', 'error');
+                        resetCsvBtn();
+                    }
+                } catch (error) {
+                    clearInterval(interval);
+                    showMessage('Status check failed', 'error');
+                    resetCsvBtn();
+                }
+            }, 1000);
+        }
+
+        function downloadCsv(filename) {
+            const link = document.createElement('a');
+            link.href = `${API_URL}/csv/download/${filename}`;
+            // Add auth header via fetch + blob
+            fetch(`${API_URL}/csv/download/${filename}`, {
+                headers: getHeaders()
+            })
+            .then(res => res.blob())
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                link.href = url;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+                showMessage('CSV downloaded!', 'success');
+                resetCsvBtn();
+            })
+            .catch(() => {
+                showMessage('CSV download failed', 'error');
+                resetCsvBtn();
+            });
+        }
+
+        function resetCsvBtn() {
+            const btn = document.getElementById('csvExportBtn');
+            btn.disabled = false;
+            btn.textContent = 'CSV Export';
         }
     </script>
 </body>

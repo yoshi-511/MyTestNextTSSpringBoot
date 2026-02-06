@@ -197,6 +197,21 @@
             flex: 1;
         }
 
+        .search-box select {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            background: white;
+            cursor: pointer;
+            min-width: 140px;
+        }
+
+        .search-box select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
         .message {
             padding: 15px;
             border-radius: 8px;
@@ -320,8 +335,13 @@
             <h2 style="margin-bottom: 20px; color: #333;">Item List</h2>
             <div class="search-box">
                 <input type="text" id="searchInput" placeholder="Search by name...">
-                <button class="btn btn-primary" onclick="searchItems()">Search</button>
-                <button class="btn btn-secondary" onclick="loadItems()">Reset</button>
+                <select id="statusFilter">
+                    <option value="all">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="completed">Completed</option>
+                </select>
+                <button class="btn btn-primary" onclick="filterItems()">Search</button>
+                <button class="btn btn-secondary" onclick="resetFilter()">Reset</button>
             </div>
             <ul class="item-list" id="itemList">
                 <li class="empty-state">
@@ -337,6 +357,7 @@
     <script>
         const API_URL = '/api/items';
         let editingId = null;
+        let allItems = [];
 
         // Check authentication
         const token = localStorage.getItem('token');
@@ -386,33 +407,40 @@
                     logout();
                     return;
                 }
-                const items = await response.json();
-                renderItems(items);
-                document.getElementById('searchInput').value = '';
+                allItems = await response.json();
+                renderItems(allItems);
             } catch (error) {
                 showMessage('Failed to load items', 'error');
             }
         }
 
-        async function searchItems() {
-            const query = document.getElementById('searchInput').value.trim();
-            if (!query) {
-                loadItems();
-                return;
+        function filterItems() {
+            const query = document.getElementById('searchInput').value.trim().toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+
+            let filtered = allItems;
+
+            // Filter by name
+            if (query) {
+                filtered = filtered.filter(item =>
+                    item.name.toLowerCase().includes(query)
+                );
             }
-            try {
-                const response = await fetch(`${API_URL}/search?name=${encodeURIComponent(query)}`, {
-                    headers: getHeaders()
-                });
-                if (response.status === 401 || response.status === 403) {
-                    logout();
-                    return;
-                }
-                const items = await response.json();
-                renderItems(items);
-            } catch (error) {
-                showMessage('Search failed', 'error');
+
+            // Filter by status
+            if (statusFilter === 'completed') {
+                filtered = filtered.filter(item => item.completed);
+            } else if (statusFilter === 'pending') {
+                filtered = filtered.filter(item => !item.completed);
             }
+
+            renderItems(filtered);
+        }
+
+        function resetFilter() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('statusFilter').value = 'all';
+            renderItems(allItems);
         }
 
         function renderItems(items) {
